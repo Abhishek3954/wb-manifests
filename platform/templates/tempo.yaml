@@ -15,9 +15,9 @@ spec:
     targetRevision: 3.2.1
     helm:
       releaseName: tempo
-        valuesObject:
-          tempo:
-            retention: 24h
+      valuesObject:
+        tempo:
+          retention: 24h
   destination:
     server: https://kubernetes.default.svc
     namespace: tracing
