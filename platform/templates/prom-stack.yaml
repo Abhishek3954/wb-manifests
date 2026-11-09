@@ -23,6 +23,11 @@ spec:
               access: proxy
               url: http://loki-gateway.logging.svc.cluster.local
               isDefault: false
+            - name: Tempo
+              type: tempo
+              access: proxy
+              url: http://tempo.tracing.svc.cluster.local:3200
+              isDefault: false
         prometheus:
           prometheusSpec:
             scrapeInterval: 30s
