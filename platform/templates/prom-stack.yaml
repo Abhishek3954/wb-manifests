@@ -26,7 +26,7 @@ spec:
             - name: Tempo
               type: tempo
               access: proxy
-              url: http://tempo.tracing.svc.cluster.local:3200
+              url: http://tempo-tempo.tracing.svc.cluster.local:3200
               isDefault: false
         prometheus:
           prometheusSpec:
