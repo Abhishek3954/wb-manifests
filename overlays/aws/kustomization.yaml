@@ -9,7 +9,6 @@ resources:
 - externalsecret.yaml
 - ingress.yaml
 - web-networkpolicy.yaml
-- storageclass.yaml
 
 images:
 - name: backend
