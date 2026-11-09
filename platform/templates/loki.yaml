@@ -38,6 +38,7 @@ spec:
           replicas: 1
           persistence:
             enabled: true
+            storageClass: gp2
             size: 10Gi
         # turn off the distributed-mode components
         read:    { replicas: 0 }
