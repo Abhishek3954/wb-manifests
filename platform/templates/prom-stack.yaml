@@ -15,6 +15,27 @@ spec:
     chart: kube-prometheus-stack
     helm:
       values: |
+        alertmanager:
+          alertmanagerSpec:
+            secrets:
+              - alert-agent-secrets
+          config:
+            route:
+              routes:
+                - reveiver: alert-agent
+                  continue: true
+                  group_by: ["namespace", "alertname"]
+                  matchers:
+                    - severity=~"warning|critical"
+            receivers:
+              - name: alert-agent
+                webhook_configs:
+                  - url: http://alert-agent.monitoring.svc.cluster.local/alert
+                    send_resolved: false
+                    http_config:
+                      authorization:
+                        type: Bearer
+                        credential_file: /etc/alertmanager/secrets/alert-agent-secrets/WEBHOOK_TOKEN
         grafana:
           enabled: true
           additionalDataSources:
