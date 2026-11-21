@@ -22,7 +22,7 @@ spec:
           config:
             route:
               routes:
-                - reveiver: alert-agent
+                - receiver: alert-agent
                   continue: true
                   group_by: ["namespace", "alertname"]
                   matchers:
