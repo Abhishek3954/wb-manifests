@@ -65,7 +65,7 @@ spec:
   refreshInterval: 1h
   secretStoreRef:
     kind: ClusterSecretStore
-    name: external-secrets
+    name: aws-secrets-manager
   target:
     name: alert-agent-secrets
     creationPolicy: Owner
