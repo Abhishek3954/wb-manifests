@@ -8,7 +8,7 @@ metadata:
   name: alert-agent
   namespace: monitoring
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 automountServiceAccountToken: true
@@ -19,7 +19,7 @@ kind: ClusterRole
 metadata:
   name: alert-agent-readonly
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 rules:
@@ -38,7 +38,7 @@ kind: ClusterRoleBinding
 metadata:
   name: alert-agent-readonly
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 roleRef:
@@ -58,7 +58,7 @@ metadata:
   name: alert-agent-secrets
   namespace: monitoring
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 spec:
@@ -79,7 +79,7 @@ metadata:
   name: alert-agent
   namespace: monitoring
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 spec:
@@ -182,7 +182,7 @@ metadata:
   name: alert-agent
   namespace: monitoring
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 spec:
@@ -202,7 +202,7 @@ metadata:
   name: alert-agent
   namespace: monitoring
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "2"
   labels:
     app.kubernetes.io/name: alert-agent
 spec:
