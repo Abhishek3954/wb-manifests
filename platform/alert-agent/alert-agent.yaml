@@ -124,7 +124,7 @@ spec:
                   key: WEBHOOK_TOKEN
             # Any model id from https://openrouter.ai/models
             - name: OPENROUTER_MODEL
-              value: "nvidia/nemotron-3.5-super-vl:free,google/gemma-4-26b-a4b-it:free,openrouter/free"
+              value: "anthropic/claude-sonnet-4.5"
             - name: PROMETHEUS_URL
               value: "http://prometheus-operated.monitoring.svc.cluster.local:9090"
             - name: CLUSTER_NAME
