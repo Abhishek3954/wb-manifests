@@ -21,6 +21,7 @@ spec:
               - alert-agent-secrets
           config:
             route:
+              receiver: "null"
               routes:
                 - receiver: alert-agent
                   continue: true
@@ -28,6 +29,7 @@ spec:
                   matchers:
                     - severity=~"warning|critical"
             receivers:
+              - name: "null"
               - name: alert-agent
                 webhook_configs:
                   - url: http://alert-agent.monitoring.svc.cluster.local/alert
