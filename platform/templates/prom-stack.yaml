@@ -35,7 +35,7 @@ spec:
                     http_config:
                       authorization:
                         type: Bearer
-                        credential_file: /etc/alertmanager/secrets/alert-agent-secrets/WEBHOOK_TOKEN
+                        credentials_file: /etc/alertmanager/secrets/alert-agent-secrets/WEBHOOK_TOKEN
         grafana:
           enabled: true
           additionalDataSources:
