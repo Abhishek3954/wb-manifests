@@ -5,6 +5,7 @@ namespace: myapp
 
 resources:
 - ../../app/
+- clustersecretstore.yaml
 - externalsecret.yaml
 - ingress.yaml
 - web-networkpolicy.yaml
