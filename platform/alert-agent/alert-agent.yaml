@@ -101,7 +101,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: agent
-          image: 793168138853.dkr.ecr.ap-south-1.amazonaws.com/agent/alert:v1
+          image: 793168138853.dkr.ecr.ap-south-1.amazonaws.com/agent/alert:v2
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
