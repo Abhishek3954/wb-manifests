@@ -1,252 +1,31 @@
-# Alertmanager AI agent.
-# Receives Alertmanager webhooks, gathers context from the Kubernetes API and
-# Prometheus, summarises with an LLM (OpenRouter) and posts the result to Slack.
-#
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: argoproj.io/v1alpha1
+kind: Application
 metadata:
   name: alert-agent
-  namespace: monitoring
+  namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-automountServiceAccountToken: true
----
-# Read-only access. No access to Secrets and no write verbs anywhere.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: alert-agent-readonly
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "events"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets"]
-    verbs: ["get", "list"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: alert-agent-readonly
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: alert-agent-readonly
-subjects:
-  - kind: ServiceAccount
-    name: alert-agent
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL | quote }}
+    targetRevision: {{ .Values.revision | quote }}
+    path: platform/alert-agent
+  destination:
+    server: https://kubernetes.default.svc
     namespace: monitoring
----
-# Pulls credentials from AWS Secrets Manager into a Kubernetes Secret.
-# On older External Secrets Operator versions use apiVersion external-secrets.io/v1beta1.
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: alert-agent-secrets
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    kind: ClusterSecretStore
-    name: aws-secrets-manager
-  target:
-    name: alert-agent-secrets
-    creationPolicy: Owner
-  dataFrom:
-    - extract:
-        key: prod/alert-agent
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: alert-agent
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-spec:
-  # One replica on purpose: the de-duplication cache is in memory.
-  replicas: 1
-  revisionHistoryLimit: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: alert-agent
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: alert-agent
-    spec:
-      serviceAccountName: alert-agent
-      automountServiceAccountToken: true
-      terminationGracePeriodSeconds: 45
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-        - name: agent
-          image: 793168138853.dkr.ecr.ap-south-1.amazonaws.com/agent/alert:v1
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: http
-              containerPort: 8080
-          env:
-            - name: OPENROUTER_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: alert-agent-secrets
-                  key: OPENROUTER_API_KEY
-            - name: SLACK_WEBHOOK_URL
-              valueFrom:
-                secretKeyRef:
-                  name: alert-agent-secrets
-                  key: SLACK_WEBHOOK_URL
-            - name: WEBHOOK_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: alert-agent-secrets
-                  key: WEBHOOK_TOKEN
-            # Any model id from https://openrouter.ai/models
-            - name: OPENROUTER_MODEL
-              value: "nvidia/nemotron-3.5-super-vl:free,google/gemma-4-26b-a4b-it:free,openrouter/free"
-            - name: PROMETHEUS_URL
-              value: "http://prometheus-operated.monitoring.svc.cluster.local:9090"
-            - name: CLUSTER_NAME
-              value: "prod-eks"
-            - name: DEPLOY_LOOKBACK_MINUTES
-              value: "180"
-            - name: LOG_TAIL_LINES
-              value: "80"
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 3
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            timeoutSeconds: 3
-          resources:
-            requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
-              memory: 384Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
-      volumes:
-        - name: tmp
-          emptyDir:
-            sizeLimit: 64Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: alert-agent
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-spec:
-  type: ClusterIP
-  selector:
-    app.kubernetes.io/name: alert-agent
-  ports:
-    - name: http
-      port: 80
-      targetPort: http
----
-# Requires network policy enforcement to be enabled on the cluster
-# (VPC CNI network policy, Calico or Cilium). Otherwise it is ignored.
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: alert-agent
-  namespace: monitoring
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-  labels:
-    app.kubernetes.io/name: alert-agent
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: alert-agent
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress:
-    # Only Alertmanager (same namespace) may call the webhook.
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: alertmanager
-      ports:
-        - protocol: TCP
-          port: 8080
-  egress:
-    # DNS
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              k8s-app: kube-dns
-      ports:
-        - protocol: UDP
-          port: 53
-        - protocol: TCP
-          port: 53
-    # Prometheus
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: prometheus
-      ports:
-        - protocol: TCP
-          port: 9090
-    # HTTPS: Kubernetes API, OpenRouter and Slack
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-      ports:
-        - protocol: TCP
-          port: 443
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m
