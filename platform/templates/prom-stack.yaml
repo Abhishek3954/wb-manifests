@@ -38,6 +38,10 @@ spec:
                       authorization:
                         type: Bearer
                         credentials_file: /etc/alertmanager/secrets/alert-agent-secrets/WEBHOOK_TOKEN
+        defaultRules:
+          disabled:
+            KubeSchedulerDown: true
+            KubeSchedulerInstanceUnreachable: true
         grafana:
           enabled: true
           additionalDataSources:
